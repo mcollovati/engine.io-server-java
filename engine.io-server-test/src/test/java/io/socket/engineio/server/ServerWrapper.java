@@ -1,18 +1,18 @@
 package io.socket.engineio.server;
 
 import org.apache.commons.io.IOUtils;
-import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
+import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -70,15 +70,10 @@ final class ServerWrapper {
             }
         }), "/*");
 
-        try {
-            WebSocketUpgradeFilter webSocketUpgradeFilter = WebSocketUpgradeFilter.configure(servletContextHandler);
-            webSocketUpgradeFilter.addMapping(
-                    new ServletPathSpec("/engine.io/*"),
+        JettyWebSocketServletContainerInitializer.configure(servletContextHandler, (servletContext, wsContainer) -> {
+            wsContainer.addMapping("/engine.io/*",
                     (servletUpgradeRequest, servletUpgradeResponse) -> new JettyWebSocketHandler(mEngineIoServer));
-        } catch (ServletException ex) {
-            ex.printStackTrace();
-        }
-
+        });
         mServer.setHandler(servletContextHandler);
     }
 
@@ -100,7 +95,8 @@ final class ServerWrapper {
 
     private static final class JettyNoLogging implements Logger {
 
-        @Override public String getName() {
+        @Override
+        public String getName() {
             return "no";
         }
 
